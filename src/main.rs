@@ -4,6 +4,7 @@ use std::thread;
 use druid::widget::{Button, Checkbox, Flex, Label, TextBox};
 use druid::{AppLauncher, Data, Lens, Widget, WidgetExt, WindowDesc};
 use rustube::{self};
+use url::Url;
 
 const _SCREEN_SMALL: (f64, f64) = (480.0, 854.0);
 const SCREEN_MEDIUM: (f64, f64) = (960.0, 540.0);
@@ -79,8 +80,19 @@ fn ui_builder() -> impl Widget<AppState> {
 fn yt_download(url: String, audio_only: bool) {
     thread::spawn(move || {
         println!("download_thread started");
-        let id = rustube::Id::from_string(url).unwrap();
-        println!("id: {:?}", id);
+        let url = match Url::parse(&url) {
+            Ok(url) => url,
+            Err(e) => {
+                println!("Error parsing url: {}", e);
+                return;
+            }
+        };
+        println!("parsed url");
+        let descrambler = rustube::blocking::VideoFetcher::from_url(&url).unwrap().fetch().unwrap();
+        println!("got descrambler");
+        let video_info = descrambler.video_info();
+        println!("video info: {:?}", video_info.player_response.video_details.title);
+        /* println!("id: {:?}", id);
         let video = rustube::blocking::Video::from_id(id).unwrap();
         println!("got video info");
         match audio_only {
@@ -96,6 +108,6 @@ fn yt_download(url: String, audio_only: bool) {
                 let path_to_video = video.best_quality().unwrap().blocking_download().unwrap();
                 println!("Downloaded video/audio to: {:?}", path_to_video)
             }
-        }
+        } */
     });
 }
